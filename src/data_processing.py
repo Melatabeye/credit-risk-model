@@ -1,29 +1,46 @@
 import pandas as pd
 
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.impute import SimpleImputer
+
+# Constants
+CREDIT_AMOUNT = "credit_amount"
+DURATION = "duration"
+TARGET_COLUMN = "is_high_risk"
 
 
-def create_proxy_target(df):
+def create_proxy_target(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Create proxy high-risk target.
+    Create a proxy target variable indicating high-risk borrowers.
+
+    Args:
+        df: Input DataFrame containing borrower information.
+
+    Returns:
+        A copy of the DataFrame with the proxy target column added.
     """
 
     df = df.copy()
 
-    df["is_high_risk"] = (
-        (df["credit_amount"] > df["credit_amount"].median()) &
-        (df["duration"] > df["duration"].median())
+    df[TARGET_COLUMN] = (
+        (df[CREDIT_AMOUNT] > df[CREDIT_AMOUNT].median())
+        & (df[DURATION] > df[DURATION].median())
     ).astype(int)
 
     return df
 
 
-def build_preprocessor(df):
+def build_preprocessor(df: pd.DataFrame) -> ColumnTransformer:
     """
-    Build preprocessing pipeline.
+    Build a preprocessing pipeline for numeric and categorical features.
+
+    Args:
+        df: Input DataFrame.
+
+    Returns:
+        A fitted ColumnTransformer preprocessing pipeline.
     """
 
     numeric_features = df.select_dtypes(
@@ -37,24 +54,21 @@ def build_preprocessor(df):
     numeric_transformer = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="median")),
-            ("scaler", StandardScaler())
+            ("scaler", StandardScaler()),
         ]
     )
 
     categorical_transformer = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="most_frequent")),
-            (
-                "encoder",
-                OneHotEncoder(handle_unknown="ignore")
-            )
+            ("encoder", OneHotEncoder(handle_unknown="ignore")),
         ]
     )
 
     preprocessor = ColumnTransformer(
         transformers=[
             ("num", numeric_transformer, numeric_features),
-            ("cat", categorical_transformer, categorical_features)
+            ("cat", categorical_transformer, categorical_features),
         ]
     )
 
