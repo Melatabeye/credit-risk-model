@@ -1,31 +1,43 @@
-import numpy as np
-import mlflow
 import pandas as pd
+import mlflow
+
+
+DEFAULT_THRESHOLD = 0.5
 
 
 class CreditRiskPredictor:
-    def __init__(self):
-        # Load latest Random Forest model from MLflow
+    """
+    Load a trained credit risk model and generate predictions.
+    """
+
+    def __init__(self) -> None:
+        """
+        Load the latest Random Forest model from MLflow.
+        """
         self.model = mlflow.sklearn.load_model(
             "models:/random_forest_model/latest"
         )
 
-    def predict(self, input_data):
+    def predict(self, input_data: pd.DataFrame) -> pd.DataFrame:
         """
-        input_data: pandas DataFrame
+        Generate credit risk predictions.
+
+        Args:
+            input_data: DataFrame containing customer features.
+
+        Returns:
+            DataFrame containing risk probability and prediction.
         """
 
-        proba = self.model.predict_proba(input_data)[:, 1]
-        preds = (proba > 0.5).astype(int)
+        probabilities = self.model.predict_proba(input_data)[:, 1]
 
-        return pd.DataFrame({
-            "risk_probability": proba,
-            "prediction": preds
-        })
+        predictions = (
+            probabilities > DEFAULT_THRESHOLD
+        ).astype(int)
 
-
-if __name__ == "__main__":
-    # simple test run
-    sample = pd.DataFrame([[0]*10])  # placeholder input
-    predictor = CreditRiskPredictor()
-    print(predictor.predict(sample))
+        return pd.DataFrame(
+            {
+                "risk_probability": probabilities,
+                "prediction": predictions,
+            }
+        )
